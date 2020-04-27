@@ -36,6 +36,7 @@ class RelativePath {
     private _configuration: any;
     private _pausedSearch: boolean;
     private _myGlob: any;
+    private _searchExclude: any;
 
     constructor() {
         this._items = null;
@@ -43,6 +44,7 @@ class RelativePath {
         this._myGlob = null;
         this._workspacePath = this.getWorkspaceFolder();
         this._configuration = workspace.getConfiguration("relativePath");
+        this._searchExclude = workspace.getConfiguration("search.exclude");
 
         this.initializeWatcher();
         this.searchWorkspace();
@@ -98,8 +100,12 @@ class RelativePath {
                 this._myGlob.resume();
             }
         } else {
+
+            const searchExclude = Object.keys(this._searchExclude).filter(n => this._searchExclude[n] === true);
+            const ignore  = this._configuration.get("ignore").concat(searchExclude);
+
             this._myGlob = new Glob(this._workspacePath + "/**/*.*",
-                { ignore: this._configuration.get("ignore") },
+                { ignore: ignore },
                 (err, files) => {
                     if (err) {
                         return;
@@ -259,7 +265,7 @@ class RelativePath {
         // Don't filter on too many files. Show the input search box instead
         if (disableQuickFilter) {
             const placeHolder = `Found ${this._items.length} files. Enter the filter query. Consider adding more 'relativePath.ignore' settings.`;
-            const input = window.showInputBox({placeHolder});
+            const input = window.showInputBox({ placeHolder });
             input.then(val => {
                 if (val === undefined) {
                     // User pressed 'Escape' 
